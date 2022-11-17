@@ -8,7 +8,7 @@
  * @format
  */
 
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -26,7 +26,7 @@ import {
   LearnMoreLinks,
   ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
-import {DataSource} from 'typeorm';
+import {Connection, createConnection} from 'typeorm';
 import {EntityA} from './entities/EntityA';
 
 const Section: React.FC<{
@@ -64,8 +64,10 @@ const App = () => {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
 
+  const [connection, setConnection] = useState<Connection>();
+
   useEffect(() => {
-    const dataSource = new DataSource({
+    createConnection({
       type: 'react-native',
       database: 'idFailure.db',
       location: 'Documents',
@@ -73,21 +75,25 @@ const App = () => {
       dropSchema: true,
       synchronize: true,
       entities: [EntityA],
-    });
+    }).then(setConnection);
+  }, []);
 
-    dataSource.initialize().then(async () => {
-      const a = new EntityA();
-      const savedA = await dataSource.getRepository(EntityA).save(a);
-      console.log(savedA);
+  if (connection) {
+    const a = new EntityA();
+    connection
+      .getRepository(EntityA)
+      .save(a)
+      .then(savedA => {
+        console.log('savedA', savedA);
 
-      const fetchedA = await dataSource.getRepository(EntityA).find({
-        where: {
-          id: 1,
-        },
+        connection
+          .getRepository(EntityA)
+          .find()
+          .then(fetchedA => {
+            console.log('fetchedA', fetchedA);
+          });
       });
-      console.log(fetchedA);
-    });
-  });
+  }
 
   return (
     <SafeAreaView style={backgroundStyle}>
